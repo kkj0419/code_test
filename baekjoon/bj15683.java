@@ -9,7 +9,7 @@ public class Main {
 
 	static int height, width;
 	static int[][] map;
-	static boolean[][] isMarked;
+	static int blindSpots = 100;
 
 	static final ArrayList<int[]>[] direction = new ArrayList[6];
 	static final int[] dX = {0, 1, 0, -1};
@@ -26,7 +26,7 @@ public class Main {
 		map = new int[height][];
 		List<Dot> dotList = new ArrayList<>();
 
-		isMarked = new boolean[height][width];
+		boolean[][] isMarked = new boolean[height][width];
 		for (int i = 0; i < height; i++) {
 			map[i] = Arrays.stream(br.readLine().split(" ")).mapToInt(Integer::parseInt).toArray();
 			for (int j = 0; j < width; j++) {
@@ -38,8 +38,13 @@ public class Main {
 				}
 			}
 		}
-		go(dotList);
-		System.out.println(searchBlindSpots());
+
+		if (dotList.isEmpty()) {
+			searchBlindSpots(isMarked);
+		} else {
+			dfs(isMarked, dotList, 0);
+		}
+		System.out.println(blindSpots);
 	}
 
 	private static void init() {
@@ -73,54 +78,42 @@ public class Main {
 		}
 	}
 
-	private static void go(List<Dot> equips) {
-		for (int i = 0; i < equips.size(); i++) {
-			Dot equip = equips.get(i);
+	private static void dfs(boolean[][] isMarked, List<Dot> equips, int idx) {
 
-			isMarked[equip.x][equip.y] = true;
-			int direct = searchMaxDirection(equip);
-			if (direct != -1)
-				markReachable(equip, direct);
-		}
-	}
+		boolean[][] currMarked = new boolean[height][width];
+		copy(currMarked, isMarked);
 
-	private static void markReachable(Dot dot, int directionIdx) {
-		int[] directionArr = direction[dot.value].get(directionIdx);
-		for (int i = 0; i < directionArr.length; i++) {
-			int direct = directionArr[i];
-			int currX = dot.x + dX[direct], currY = dot.y + dY[direct];
-			while (isReachable(currX, currY)) {
-				isMarked[currX][currY] = true;
-				currX += dX[direct];
-				currY += dY[direct];
-			}
-		}
-	}
+		Dot equip = equips.get(idx);
 
-	private static int searchMaxDirection(Dot dot) {
-		int maxDirection = -1;
-		int maxPlace = 0;
-		ArrayList<int[]> directs = direction[dot.value];
+		currMarked[equip.x][equip.y] = true;
+		ArrayList<int[]> directs = direction[equip.value];        //가능한 방향 리스트
 		for (int i = 0; i < directs.size(); i++) {
-			int currMarkable = 0;
 			for (int diIdx = 0; diIdx < directs.get(i).length; diIdx++) {
-				currMarkable += searchMarkable(dot, directs.get(i)[diIdx]);
+				searchMarkable(currMarked, equip, directs.get(i)[diIdx]);
 			}
-			if (currMarkable > maxPlace) {
-				maxDirection = i;
-				maxPlace = currMarkable;
+			if (idx == equips.size() - 1) {		//deeper일때 카운트 갱신
+				searchBlindSpots(currMarked);
+			} else {
+				dfs(currMarked, equips, idx + 1);
 			}
+			copy(currMarked, isMarked);
 		}
-		return maxDirection;
 	}
 
-	private static int searchMarkable(Dot dot, int direct) {
+	private static void copy(boolean[][] dest, boolean[][] start) {
+		for (int i = 0; i < dest.length; i++) {
+			dest[i] = start[i].clone();
+		}
+	}
+
+	private static int searchMarkable(boolean[][] currMarked, Dot dot, int direct) {
 
 		int place = 0;
 		int currX = dot.x + dX[direct], currY = dot.y + dY[direct];
 
 		while (isReachable(currX, currY)) {
-			if (!isMarked[currX][currY]) {
+			if (!currMarked[currX][currY]) {
+				currMarked[currX][currY] = true;
 				place++;
 			}
 			currX += dX[direct];
@@ -134,16 +127,16 @@ public class Main {
 		return 0 <= x && x < height && y >= 0 && y < width && map[x][y] != 6;
 	}
 
-	private static int searchBlindSpots() {
+	private static void searchBlindSpots(boolean[][] currMarked) {
 		int count = 0;
 		for (int x = 0; x < height; x++) {
 			for (int y = 0; y < width; y++) {
-				if (!isMarked[x][y]) {
+				if (!currMarked[x][y]) {
 					count++;
 				}
 			}
 		}
-		return count;
+		blindSpots = Math.min(count, blindSpots);
 	}
 }
 
