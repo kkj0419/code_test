@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -27,7 +26,7 @@ class Solution {
 
 			linkedlist[currDepart].add(new Edge(destString));
 		}
-		for (int i = 0; i < count; i++) {
+		for (int i = 0; i < airports.size(); i++) {
 			linkedlist[i].sort(Comparator.comparing(e -> e.dest));
 		}
 
