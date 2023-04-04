@@ -25,17 +25,17 @@ class Solution {
 	}
 
 	ArrayList<Edge>[] linkedlist;
-	Set<Integer> tops;
-	int[] starts;
+	Set<Integer> bottoms;
+	int[] dests;
 
 	public int[] solution(int n, int[][] paths, int[] gates, int[] summits) {
-		int[] answer = new int[2];
 		//init
-		starts = gates;
-		tops = new HashSet<>();
-		for (int i = 0; i < summits.length; i++) {
-			tops.add(summits[i]);
+		bottoms = new HashSet<>();
+		dests = summits;
+		for (int i = 0; i < gates.length; i++) {
+			bottoms.add(gates[i]);
 		}
+
 		linkedlist = new ArrayList[n + 1];
 		for (int i = 1; i <= n; i++) {
 			linkedlist[i] = new ArrayList<>();
@@ -46,64 +46,53 @@ class Solution {
 			linkedlist[end].add(new Edge(start, cost));
 		}
 
-		int[] route = new int[] {Integer.MAX_VALUE, Integer.MAX_VALUE};
-		for (int i = 0; i < gates.length; i++) {
-			route = findRoute(gates[i], route[0], route[1]);
-			if (route[0] != Integer.MAX_VALUE) {
-				answer = route;
+		Arrays.sort(summits);
+		int top = 0, intensity = Integer.MAX_VALUE;
+		for (int i = 0; i < summits.length; i++) {
+			int currCost = findRoute(summits[i]);
+			if (currCost < intensity) {
+				intensity= currCost;
+				top = summits[i];
 			}
 		}
-		return answer;
+
+		return new int[]{top, intensity};
 	}
 
-	private int[] findRoute(int start, int dest, int minIntensity) {
+	private int findRoute(int top){
 		PriorityQueue<Edge> pq = new PriorityQueue<>();
 		int[] isVisited = new int[linkedlist.length];
-		initRoute(pq, isVisited, start);
+		initRoute(pq, isVisited, top);
 
-		int intensity = minIntensity, currIntensity = 0;
-		int top = dest;
-		boolean flag = false;
+		int intensity = 0;
 		while (!pq.isEmpty()) {
-			Edge currEdge = pq.poll();
-			int next = currEdge.dest;
-			int currCost = currEdge.cost;
-			if (currCost > intensity) {    //out of 최대 intensity
-				break;
-			}
+			Edge curr = pq.poll();
+			int next = curr.dest;
+			int currCost = curr.cost;
 
-			currIntensity = Math.max(currIntensity, currCost);
-			if (isVisited[next] != -1 && isVisited[next] <= currIntensity) {    //이미 방문한 노드인지, 또 방문할 의미가 있는지
+			if (isVisited[next] != -1) {
 				continue;
 			}
-			isVisited[next] = currIntensity;
-			if (tops.contains(next)) {
-				if (intensity > currIntensity) {
-					top = next;
-					intensity = currIntensity;
-				} else if (intensity == currIntensity) {
-					top = Math.min(top, next);
-				}
-				flag = true;
+			intensity = Math.max(currCost, intensity);
+			isVisited[next] = intensity;
+			if (bottoms.contains(next)) {
+				return intensity;
 			} else {
-				for (Edge edge : linkedlist[next]) {
-					if (isVisited[edge.dest] == -1 || isVisited[edge.dest] > currIntensity) {
-						pq.add(edge);
+				for (int i = 0; i < linkedlist[next].size(); i++) {
+					int nextDest = linkedlist[next].get(i).dest;
+					if (isVisited[nextDest] == -1) {
+						pq.add(linkedlist[next].get(i));
 					}
 				}
 			}
 		}
-
-		if (flag) {
-			return new int[] {top, intensity};
-		}
-		return new int[] {Integer.MAX_VALUE, minIntensity};
+		return Integer.MAX_VALUE;
 	}
 
 	private void initRoute(PriorityQueue<Edge> pq, int[] isVisited, int start) {
 		Arrays.fill(isVisited, -1);
-		for (int i = 0; i < starts.length; i++) {
-			isVisited[starts[i]] = 0;
+		for (int i = 0; i < dests.length; i++) {
+			isVisited[dests[i]] = 0;
 		}
 		for (Edge edge : linkedlist[start]) {
 			if (isVisited[edge.dest] == -1) {
