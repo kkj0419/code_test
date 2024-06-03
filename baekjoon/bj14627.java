@@ -24,8 +24,6 @@ public class Main {
 			sum += length[i];
 		}
 		System.out.println(sum - pha*(long)c);
-
-
 	}
 
 	private static long calLength(long left, long right, int c,  long[] length){
